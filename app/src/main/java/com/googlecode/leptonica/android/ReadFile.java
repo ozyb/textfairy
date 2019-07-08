@@ -16,17 +16,19 @@
 
 package com.googlecode.leptonica.android;
 
-import com.squareup.picasso.MemoryPolicy;
-import com.squareup.picasso.Picasso;
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
+import com.bumptech.glide.request.RequestOptions;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
+import android.support.annotation.WorkerThread;
 import android.util.Log;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Image input and output methods.
@@ -34,10 +36,6 @@ import java.io.IOException;
  * @author alanv@google.com (Alan Viverette)
  */
 public class ReadFile {
-    static {
-        System.loadLibrary("pngo");
-        System.loadLibrary("lept");
-    }
 
     private static final String LOG_TAG = ReadFile.class.getSimpleName();
 
@@ -117,11 +115,6 @@ public class ReadFile {
         return nativeReplaceBytes8(pixs.mNativePix, pixelData, width, height);
     }
 
-    public static Pix readFile(File file) {
-        return readFile(null, file);
-    }
-
-
     /**
      * Creates a Pix object from encoded file data. Supported formats are BMP
      * and JPEG.
@@ -129,6 +122,7 @@ public class ReadFile {
      * @param file The JPEG or BMP-encoded file to read in as a Pix.
      * @return a Pix object
      */
+    @WorkerThread
     public static Pix readFile(Context context, File file) {
         if (file == null) {
             Log.w(LOG_TAG, "File must be non-null");
@@ -143,31 +137,45 @@ public class ReadFile {
             return null;
         }
 
-        return loadWithPicasso(context, file);
+        return load(context, file);
     }
 
-    public static Pix loadWithPicasso(Context context, File file) {
+    @WorkerThread
+    public static Pix load(Context context, File file) {
         try {
-            final Bitmap bmp = Picasso.with(context).load(file).memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE).get();
+            final Bitmap bmp = Glide.with(context)
+                    .asBitmap()
+                    .load(file)
+                    .apply(RequestOptions
+                            .skipMemoryCacheOf(true)
+                            .diskCacheStrategy(DiskCacheStrategy.NONE))
+                    .submit().get();
             if (bmp != null) {
                 final Pix pix = readBitmap(bmp);
                 bmp.recycle();
                 return pix;
             }
-        } catch (IOException ignored) {
+        } catch (InterruptedException ignored) {
+        } catch (ExecutionException ignored) {
         }
         return null;
     }
 
-    public static Pix loadWithPicasso(Context context, Uri uri) {
+    @WorkerThread
+    public static Pix load(Context context, Uri uri) {
         try {
-            final Bitmap bmp = Picasso.with(context).load(uri).memoryPolicy(MemoryPolicy.NO_CACHE, MemoryPolicy.NO_STORE).get();
+            final Bitmap bmp = Glide.with(context)
+                    .asBitmap()
+                    .load(uri)
+                    .apply(RequestOptions.skipMemoryCacheOf(true))
+                    .submit().get();
             if (bmp != null) {
                 final Pix pix = readBitmap(bmp);
                 bmp.recycle();
                 return pix;
             }
-        } catch (IOException ignored) {
+        } catch (InterruptedException e) {
+        } catch (ExecutionException e) {
         }
         return null;
     }

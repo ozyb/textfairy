@@ -90,13 +90,15 @@ class ImageLoadAsyncTask extends AsyncTask<Void, Void, ImageLoadAsyncTask.LoadRe
             return null;
         }
         Pix p;
-        if (cameraPicUri.getPath().endsWith(".pdf")) {
+        String type = context.getContentResolver().getType(cameraPicUri);
+
+        if (cameraPicUri.getPath().endsWith(".pdf") || "application/pdf".equalsIgnoreCase(type)) {
             p = loadAsPdf(cameraPicUri);
             if (p == null) {
                 return new LoadResult(PixLoadStatus.IMAGE_FORMAT_UNSUPPORTED);
             }
         } else {
-            p = ReadFile.loadWithPicasso(context, cameraPicUri);
+            p = ReadFile.load(context, cameraPicUri);
             if (p == null) {
                 mCrashLogger.setString("image uri", cameraPicUri.toString());
                 mCrashLogger.logException(new IOException("could not load image."));
@@ -159,5 +161,6 @@ class ImageLoadAsyncTask extends AsyncTask<Void, Void, ImageLoadAsyncTask.LoadRe
         }
         return p;
     }
+
 
 }

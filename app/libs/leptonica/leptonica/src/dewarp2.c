@@ -336,16 +336,17 @@ FPIX       *fpix;
         ptaGetIPt(pta,0,&left,NULL);
         ptaGetIPt(pta,count-1,&right,NULL);
         l_float32   cc0, cc1, cc2;
-        //ptaGetCubicLSF(pta,&c3,&c2,&c1,&c0,NULL);
+        ptaGetCubicLSF(pta,&c3,&c2,&c1,&c0,NULL);
         ptaGetQuadraticLSF(pta, &cc2, &cc1, &cc0, NULL);
-        ptaGetQuarticLSF(pta, &c4, &c3, &c2, &c1, &c0, NULL);
+        //ptaGetQuarticLSF(pta, &c4, &c3, &c2, &c1, &c0, NULL);
         numaAddNumber(nacurve0, cc2);
         ptad = ptaCreate(nx);
 
         for (j = 0; j < nx; j++) {  /* uniformly sampled in x */
              x = j * sampling;
              if(x>=left && x<=right){
-                 applyQuarticFit(c4,c3,c2,c1,c0,x,&y);
+                 //applyQuarticFit(c4,c3,c2,c1,c0,x,&y);
+                 applyCubicFit(c3, c2, c1, c0, x, &y);
              } else {
                  applyQuadraticFit(cc2, cc1, cc0, x, &y);
              }
@@ -364,8 +365,8 @@ FPIX       *fpix;
             pta = ptaaGetPta(ptaa, i, L_CLONE);
             ptaGetArrays(pta, &nax, NULL);
             //ptaGetQuadraticLSF(pta, NULL, NULL, NULL, &nafit);
-            //ptaGetCubicLSF(pta,NULL,NULL,NULL,NULL,&nafit);
-            ptaGetQuarticLSF(pta,NULL,NULL,NULL,NULL,NULL,&nafit);
+            ptaGetCubicLSF(pta,NULL,NULL,NULL,NULL,&nafit);
+            //ptaGetQuarticLSF(pta,NULL,NULL,NULL,NULL,NULL,&nafit);
             ptad = ptaCreateFromNuma(nax, nafit);
             ptaaAddPta(ptaat, ptad, L_INSERT);
             ptaDestroy(&pta);
@@ -812,8 +813,16 @@ PTAA     *ptaa;
         /* Remove the components (e.g., embedded images) that have
          * long vertical runs (>= 50 pixels).  You can't use bounding
          * boxes because connected component b.b. of lines can be quite
-         * tall due to slope and curvature.  */
-    pix2 = pixMorphSequence(pix1, "e1.50", 0);  /* seed */
+         * tall due to slope and curvature.
+         *
+         * High reslution images can have valid lines higher than 50px.
+         * Use pix resolution to scale threshold.
+         */
+    
+    l_int32 yRes = pixGetYRes(pixs);
+    l_int32 tallComponentThreshhold = L_MAX(50, (50 * yRes)/200);
+    snprintf(buf, sizeof(buf), "e1.%d",tallComponentThreshhold);
+    pix2 = pixMorphSequence(pix1, buf, 0);  /* seed */
     pixSeedfillBinary(pix2, pix2, pix1, 8);  /* tall components */
     pixXor(pix2, pix2, pix1);  /* remove tall */
 

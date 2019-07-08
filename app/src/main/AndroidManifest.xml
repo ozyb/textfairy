@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.renard.ocr"
-          android:installLocation="auto"
-          android:versionName="3.1.1">
+          android:installLocation="auto">
 
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -100,7 +99,8 @@
 
         </activity>
 
-        <service android:name=".main_menu.language.OCRLanguageInstallService"/>
+        <service android:name=".main_menu.language.OCRLanguageInstallService"
+                 android:permission="android.permission.BIND_JOB_SERVICE"/>
 
         <receiver android:name=".main_menu.language.DownloadBroadCastReceiver">
             <intent-filter>
@@ -150,6 +150,9 @@
         </activity>
         <meta-data android:name="io.fabric.ApiKey"
                    android:value="ef8b77a0fd2ef3e87c78497b9595a9234fe5b711"/>
+
+        <meta-data android:name="google_analytics_adid_collection_enabled"
+                   android:value="false"/>
 
     </application>
 
